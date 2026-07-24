@@ -17,7 +17,12 @@ def detect_vehicles(video_path: str):
         if not success:
             break
 
-        results = model(frame)
+        results = model.track(
+        frame,
+        persist=True,
+        tracker="bytetrack.yaml",
+        verbose=False
+        )
 
         stats.update(results, model)
 
