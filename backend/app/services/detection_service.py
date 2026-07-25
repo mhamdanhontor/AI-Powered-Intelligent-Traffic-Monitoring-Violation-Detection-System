@@ -6,6 +6,7 @@ from app.services.line_counter import LineCounter
 
 def detect_vehicles(video_path: str):
     counter = LineCounter()
+    speed = SpeedEstimator()
     processor = VideoProcessor(video_path)
 
     stats = StatisticsCollector()
@@ -27,14 +28,16 @@ def detect_vehicles(video_path: str):
         counter.update(results)
 
         stats.update(results, model)
-
+        speed.update(results)
         annotated = FrameAnnotator.draw(
 
             results,
 
             frame,
 
-            counter.line_y
+            counter.line_y,
+
+            speed
 
         )
 
@@ -48,6 +51,8 @@ def detect_vehicles(video_path: str):
 
         "vehicles_crossed": counter.vehicle_count,
 
-        "output_video": str(processor.output_path)
+        "output_video": str(processor.output_path),
+
+        "speed_estimation": speed.vehicle_speed
 
     }
