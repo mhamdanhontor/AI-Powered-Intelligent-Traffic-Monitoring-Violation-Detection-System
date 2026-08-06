@@ -1,43 +1,63 @@
-from collections import defaultdict
+from typing import Dict
+
+from app.services.vehicle import Vehicle
 
 
 class LineCounter:
+    """
+    Counts vehicles crossing a virtual horizontal line.
 
-    def __init__(self):
+    A vehicle is counted only once.
+    """
 
-        self.line_y = 400
+    def __init__(self, line_y: int = 400):
 
+        self.line_y = line_y
+
+        # Vehicles already counted
         self.crossed_ids = set()
 
-        self.previous_positions = defaultdict(lambda: None)
+        # Previous Y position of every tracked vehicle
+        self.previous_y: Dict[int, int] = {}
 
+        # Current vehicle count
         self.vehicle_count = 0
 
-def update(self, results):
+    def update(self, vehicle: Vehicle):
+        """
+        Update the line counter using a Vehicle object.
+        """
 
-    for box in results[0].boxes:
+        track_id = vehicle.track_id
+        center_y = vehicle.center[1]
 
-        if box.id is None:
-            continue
+        previous_y = self.previous_y.get(track_id)
 
-        track_id = int(box.id)
+        # Save current position
+        self.previous_y[track_id] = center_y
 
-        x1, y1, x2, y2 = box.xyxy[0]
-
-        center_y = int((y1 + y2) / 2)
-
-        previous_y = self.previous_positions[track_id]
-
-        self.previous_positions[track_id] = center_y
-
+        # First appearance
         if previous_y is None:
-            continue
+            return
 
+        # Already counted
         if track_id in self.crossed_ids:
-            continue
+            return
 
+        # Vehicle crossed the line from top to bottom
         if previous_y < self.line_y <= center_y:
 
             self.crossed_ids.add(track_id)
 
             self.vehicle_count += 1
+
+            vehicle.crossed_line = True
+
+    def reset(self):
+        """
+        Reset all counters.
+        """
+
+        self.crossed_ids.clear()
+        self.previous_y.clear()
+        self.vehicle_count = 0

@@ -1,43 +1,62 @@
+from collections import defaultdict
+
+from app.services.vehicle import Vehicle
+
+
 class StatisticsCollector:
+    """
+    Collects project statistics.
+
+    Each tracked vehicle should only be counted once.
+    """
+
+    # COCO classes we want to count
+    VALID_CLASSES = {
+        "car",
+        "motorcycle",
+        "bus",
+        "truck",
+    }
 
     def __init__(self):
 
-        self.unique_vehicles = set()
+        # Track IDs already counted
+        self.unique_vehicle_ids = set()
 
-        self.vehicle_types = {
-            "car": 0,
-            "truck": 0,
-            "bus": 0,
-            "motorcycle": 0,
-        }
+        # Vehicle counts by type
+        self.vehicle_counts = defaultdict(int)
 
-    def update(self, results, model):
+        # Total detections
+        self.total_unique_vehicles = 0
 
-        for box in results[0].boxes:
+    def update(self, vehicle: Vehicle):
+        """
+        Update statistics using a Vehicle object.
+        """
 
-            if box.id is None:
-                continue
+        if vehicle.track_id in self.unique_vehicle_ids:
+            return
 
-            track_id = int(box.id)
+        self.unique_vehicle_ids.add(vehicle.track_id)
 
-            class_id = int(box.cls)
+        if vehicle.class_name in self.VALID_CLASSES:
 
-            class_name = model.names[class_id]
+            self.vehicle_counts[vehicle.class_name] += 1
 
-            if track_id not in self.unique_vehicles:
-
-                self.unique_vehicles.add(track_id)
-
-                if class_name in self.vehicle_types:
-
-                    self.vehicle_types[class_name] += 1
+            self.total_unique_vehicles += 1
 
     def get_statistics(self):
 
         return {
-
-            "total_unique_vehicles": len(self.unique_vehicles),
-
-            "vehicle_breakdown": self.vehicle_types
-
+            "total_unique_vehicles": self.total_unique_vehicles,
+            "vehicle_breakdown": dict(self.vehicle_counts),
         }
+
+    def reset(self):
+        """
+        Reset all collected statistics.
+        """
+
+        self.unique_vehicle_ids.clear()
+        self.vehicle_counts.clear()
+        self.total_unique_vehicles = 0
